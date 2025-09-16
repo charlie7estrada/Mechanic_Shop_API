@@ -3,9 +3,11 @@ from .schemas import customer_schema, customers_schema
 from flask import request, jsonify
 from marshmallow import ValidationError
 from app.models import Customer, db
+from app.extensions import limiter, cache
 
 #CREATE Customer ROUTE
 @customers_bp.route('', methods=['POST']) #route servers as the trigger for the function below.
+@limiter.limit("3 per hour")  #A client can only attempt to make 3 users per hour
 def create_customer():
     try:
         data = customer_schema.load(request.json)
@@ -20,6 +22,7 @@ def create_customer():
 
 #Read customers
 @customers_bp.route('', methods=['GET']) #Endpoint to get user information
+@cache.cached(timeout=60) #stores to a cache, so when you make any subsequent calls within 60 seconds, it will reach into the cache instead. So if you were to test these calls, the first one would be slower than the ones following.
 def read_customers():
     customers = db.session.query(Customer).all()
     return customers_schema.jsonify(customers), 200
