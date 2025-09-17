@@ -4,6 +4,33 @@ from flask import request, jsonify
 from marshmallow import ValidationError
 from app.models import Customer, db
 from app.extensions import limiter, cache
+from app.utils.util import encode_token, token_required
+from sqlalchemy import select 
+
+# login route
+@customers_bp.route("/login", methods=['POST'])
+def login():
+    try:
+        credentials = request.json
+        email = credentials['email']
+        password = credentials['password']
+    except KeyError:
+        return jsonify({'messages': 'Invalid payload, expecting username and password'}), 400
+    
+    query = select(Customer).where(Customer.email == email) 
+    user = db.session.execute(query).scalar_one_or_none() #Query user table for a user with this email
+
+    if user and user.password == password: #if we have a user associated with the username, validate the password
+        auth_token = encode_token(user.id)
+
+        response = {
+            "status": "success",
+            "message": "Successfully Logged In",
+            "auth_token": auth_token
+        }
+        return jsonify(response), 200
+    else:
+        return jsonify({'messages': "Invalid email or password"}), 401
 
 #CREATE Customer ROUTE
 @customers_bp.route('', methods=['POST']) #route servers as the trigger for the function below.
@@ -35,6 +62,7 @@ def read_customer(customer_id):
 
 #Delete a customer
 @customers_bp.route('<int:customer_id>', methods=['DELETE'])
+@token_required
 def delete_customer(customer_id):
     customer = db.session.get(Customer, customer_id)
     db.session.delete(customer)
