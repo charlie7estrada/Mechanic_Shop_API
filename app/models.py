@@ -37,6 +37,8 @@ class Mechanic(Base):
     email: Mapped[str] = mapped_column(db.String(360), nullable=False, unique=True)
     phone: Mapped[str] = mapped_column(db.String(15), nullable=False, unique=True)
     salary: Mapped[float] = mapped_column(db.Float, nullable=False)
+    password: Mapped[str] = mapped_column(db.String(255), nullable=False)
+    # relationships
     tickets: Mapped[list['ServiceTickets']] = relationship('ServiceTickets', secondary=service_mechanics, back_populates='mechanics')
 
 class ServiceTickets(Base):
@@ -47,6 +49,7 @@ class ServiceTickets(Base):
     service_date: Mapped[date]
     service_desc: Mapped[str] = mapped_column(db.String(255), nullable=False)
     customer_id: Mapped[int] = mapped_column(ForeignKey('customers.id'), nullable=False)
+    
     #Relationships
     customer: Mapped[Customer] = relationship('Customer', back_populates='service_tickets')
     mechanics: Mapped[list['Mechanic']] = relationship('Mechanic', secondary=service_mechanics, back_populates='tickets')

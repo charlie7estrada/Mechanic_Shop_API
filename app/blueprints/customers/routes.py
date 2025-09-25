@@ -20,7 +20,7 @@ def login():
     query = select(Customer).where(Customer.email == email) 
     user = db.session.execute(query).scalar_one_or_none() #Query user table for a user with this email
 
-    if user and user.password == password: #if we have a user associated with the username, validate the password
+    if user and user.password == password: #if we have a user associated with the email, validate the password
         auth_token = encode_token(user.id)
 
         response = {
@@ -71,6 +71,7 @@ def delete_customer(customer_id):
 
 #Update a customer
 @customers_bp.route('<int:customer_id>', methods=['PUT'])
+@token_required
 def update_customer(customer_id):
     customer = db.session.get(Customer, customer_id) #Query for our user to update
 

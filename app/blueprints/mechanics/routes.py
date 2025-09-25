@@ -1,8 +1,36 @@
 from app.blueprints.mechanics import mechanics_bp
-from .schemas import mechanic_schema, mechanics_schema
+from .schemas import mechanic_schema, mechanics_schema, login_schema
+from app.blueprints.service_tickets.schemas import service_tickets_schema
 from flask import request, jsonify
 from marshmallow import ValidationError
-from app.models import Mechanic, db
+from app.models import Mechanic, db, ServiceTickets
+from app.utils.util import encode_token, token_required
+from sqlalchemy import select 
+
+# login route
+@mechanics_bp.route("/login", methods=['POST'])
+def login():
+    try:
+        credentials = login_schema.load(request.json)
+        email = credentials['email']
+        password = credentials['password']
+    except ValidationError as e:
+        return jsonify(e.messages), 400
+    
+    query = select(Mechanic).where(Mechanic.email == email) 
+    user = db.session.execute(query).scalar_one_or_none() #Query user table for a user with this email
+
+    if user and user.password == password: #if we have a user associated with the email, validate the password
+        auth_token = encode_token(user.id)
+
+        response = {
+            "status": "success",
+            "message": "Successfully Logged In",
+            "auth_token": auth_token
+        }
+        return jsonify(response), 200
+    else:
+        return jsonify({'messages': "Invalid email or password"}), 401
 
 @mechanics_bp.route('', methods=['POST'])
 def create_mechanic():
@@ -23,6 +51,7 @@ def read_mechanics():
     return mechanics_schema.jsonify(mechanics), 200
 
 @mechanics_bp.route('<int:mechanic_id>', methods=['PUT'])
+@token_required
 def update_mechanic(mechanic_id):
     mechanic = db.session.get(Mechanic, mechanic_id)
 
@@ -42,8 +71,27 @@ def update_mechanic(mechanic_id):
 
 
 @mechanics_bp.route('<int:mechanic_id>', methods=['DELETE'])
+@token_required
 def delete_mechanic(mechanic_id):
     mechanic = db.session.get(Mechanic, mechanic_id)
     db.session.delete(mechanic)
     db.session.commit()
     return jsonify({"message": f"Successfully deleted user {mechanic_id}"}), 200
+
+@mechanics_bp.route("/my-tickets", methods=['GET'])
+@token_required
+def my_tickets(mechanic_id):
+    mechanic = db.session.get(Mechanic, mechanic_id)
+    if len(mechanic.tickets) <= 0:
+        return jsonify({"message": "No tickets found for this mechanic"}), 404
+    output = []
+    for ticket in mechanic.tickets:
+        print(ticket.id, ticket.service_desc, ticket.service_date)
+        output.append({
+            "id": ticket.id,
+            "VIN": ticket.VIN,
+            "service_date": ticket.service_date.isoformat() if ticket.service_date else None,
+            "service_desc": ticket.service_desc,
+            "customer_id": ticket.customer_id
+        })
+    return jsonify(output), 200
