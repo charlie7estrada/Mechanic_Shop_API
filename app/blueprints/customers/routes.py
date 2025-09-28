@@ -60,6 +60,16 @@ def read_customer(customer_id):
     customer = db.session.get(Customer, customer_id)
     return customer_schema.jsonify(customer), 200
 
+#Search for a customer based on their email
+@customers_bp.route('/search', methods=['GET'])
+def search_email():
+    email = request.args.get('email')  # Accessing the query parameters from the URL
+    
+    if email:
+        customer = db.session.query(Customers).where(Customers.email.like(f'%{email}%')).all()
+    
+    return customers_schema.jsonify(customer), 200
+
 #Delete a customer
 @customers_bp.route('<int:customer_id>', methods=['DELETE'])
 @token_required

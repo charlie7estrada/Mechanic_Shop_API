@@ -1,15 +1,8 @@
-# Service_Ticket: Create the following routes to Create service tickets, assign mechanics, remove mechanics, and retrieve all service tickets.
-
-#     POST '/': Pass in all the required information to create the service_ticket.
-#     PUT '/<ticket_id>/assign-mechanic/<mechanic-id>: Adds a relationship between a service ticket and the mechanics. (Reminder: use your relationship attributes! They allow you the treat the relationship like a list, able to append a Mechanic to the mechanics list).
-#     PUT '/<ticket_id>/remove-mechanic/<mechanic-id>: Removes the relationship from the service ticket and the mechanic.
-#     GET '/': Retrieves all service tickets.
-
 from app.blueprints.service_tickets import service_tickets_bp
 from .schemas import service_ticket_schema, service_tickets_schema
 from flask import request, jsonify
 from marshmallow import ValidationError
-from app.models import ServiceTickets, Mechanic, db
+from app.models import ServiceTickets, Mechanic, Inventory, db
 
 @service_tickets_bp.route('', methods=['POST'])
 def create_service_ticket():
@@ -63,3 +56,24 @@ def read_service_tickets():
     tickets = db.session.query(ServiceTickets).all()
     return service_tickets_schema.jsonify(tickets), 200
 
+# add a single part to an existing Service Ticket
+@service_tickets_bp.route("/<int:ticket_id>/add-part", methods=["POST"])
+def add_part_to_ticket(ticket_id):
+    ticket = db.session.get(ServiceTickets, ticket_id)
+    if not ticket:
+        return jsonify({"message": "Service Ticket not found"}), 404
+    
+    data = request.get_json()
+    part_id = data.get("part_id")
+    if not part_id:
+        return jsonify({"message": "part_id is required"}), 400
+
+    part = db.session.get(Inventory, part_id)
+    if not part:
+        return jsonify({"message": "Part not found"}), 404
+
+    if part not in ticket.parts:
+        ticket.parts.append(part)
+        db.session.commit()
+
+    return service_ticket_schema.jsonify(ticket), 200
