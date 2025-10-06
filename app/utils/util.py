@@ -37,6 +37,7 @@ def token_required(f):
         except jose.exceptions.JWTError:
              return jsonify({'message': 'Invalid token!'}), 401
 
-        return f(user_id, *args, **kwargs)
+        kwargs['user_id'] = user_id
+        return f(*args, **kwargs)
 
     return decorated

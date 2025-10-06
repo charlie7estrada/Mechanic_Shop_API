@@ -71,18 +71,18 @@ def search_email():
     return customers_schema.jsonify(customer), 200
 
 #Delete a customer
-@customers_bp.route('<int:customer_id>', methods=['DELETE'])
+@customers_bp.route('/<int:customer_id>', methods=['DELETE'])
 @token_required
-def delete_customer(customer_id):
+def delete_customer(customer_id=None, user_id=None):
     customer = db.session.get(Customer, customer_id)
     db.session.delete(customer)
     db.session.commit()
     return jsonify({"message": f"Successfully deleted user {customer_id}"}), 200
 
 #Update a customer
-@customers_bp.route('<int:customer_id>', methods=['PUT'])
+@customers_bp.route('/<int:customer_id>', methods=['PUT'])
 @token_required
-def update_customer(customer_id):
+def update_customer(customer_id=None, user_id=None):
     customer = db.session.get(Customer, customer_id) #Query for our user to update
 
     if not customer: #Checking if I got a customer
