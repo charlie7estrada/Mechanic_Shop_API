@@ -5,6 +5,7 @@ from marshmallow import ValidationError
 from app.models import Mechanic, db, ServiceTickets
 from app.utils.util import encode_token, token_required
 from sqlalchemy import select 
+from sqlalchemy.exc import IntegrityError
 
 # login route
 @mechanics_bp.route("/login", methods=['POST'])
@@ -41,7 +42,11 @@ def create_mechanic():
 
     new_mechanic = Mechanic(**data) #Creating User object
     db.session.add(new_mechanic)
-    db.session.commit()
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({"message": "email is taken"}), 400
     return mechanic_schema.jsonify(new_mechanic), 201
 
 @mechanics_bp.route('', methods=['GET'])
@@ -51,7 +56,7 @@ def read_mechanics():
 
 @mechanics_bp.route('<int:mechanic_id>', methods=['PUT'])
 @token_required
-def update_mechanic(mechanic_id):
+def update_mechanic(mechanic_id=None, user_id=None):
     mechanic = db.session.get(Mechanic, mechanic_id)
 
     if not mechanic: 
@@ -71,7 +76,7 @@ def update_mechanic(mechanic_id):
 
 @mechanics_bp.route('<int:mechanic_id>', methods=['DELETE'])
 @token_required
-def delete_mechanic(mechanic_id):
+def delete_mechanic(mechanic_id=None, user_id=None):
     mechanic = db.session.get(Mechanic, mechanic_id)
     db.session.delete(mechanic)
     db.session.commit()
@@ -79,8 +84,10 @@ def delete_mechanic(mechanic_id):
 
 @mechanics_bp.route("/my-tickets", methods=['GET'])
 @token_required
-def my_tickets(mechanic_id):
+def my_tickets(mechanic_id=None, user_id=None):
     mechanic = db.session.get(Mechanic, mechanic_id)
+    if not mechanic:
+        return jsonify({"message": "Mechanic not found"}), 404
     if len(mechanic.tickets) <= 0:
         return jsonify({"message": "No tickets found for this mechanic"}), 404
     output = []

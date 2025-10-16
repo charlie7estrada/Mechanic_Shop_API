@@ -5,7 +5,6 @@ info:
   version: "1.0.0"
 host: "127.0.0.1:5000"
 schemes:
-  - "https"
   - "http"
 consumes:
   - "application/json"
@@ -78,6 +77,7 @@ paths:
           schema:
             $ref: "#/definitions/AllCustomers"  
 
+  /customers/{customer_id}:
     put: 
       tags:
         - customers
@@ -86,6 +86,11 @@ paths:
       security:
         - bearerAuth: []
       parameters:
+        - in: path
+          name: customer_id
+          required: true
+          type: integer
+          description: "ID of the customer to update"
         - in: "body"
           name: "body"
           description: "Information required to update a Customer."
@@ -276,6 +281,164 @@ paths:
             schema:
               $ref: "#/definitions/AllTickets" 
 
+  /service_tickets/add_mechanic:
+    put:
+      tags:
+        - service tickets
+      summary: "Assign a mechanic to a service ticket"
+      description: "Requires Ticket ID and Mechanic ID"
+      parameters:
+        - in: "body"
+          name: "body"
+          required: true
+          schema:
+            $ref: "#/definitions/TicketMechanicInput"
+      responses:
+        200:
+          description: "Mechanic assigned successfully"
+          schema:
+            $ref: "#/definitions/TicketMechanicResponse"
+
+  /service_tickets/remove_mechanic:
+    put:
+      tags:
+        - service tickets
+      summary: "Remove a mechanic from a service ticket"
+      description: "Requires Ticket ID and Mechanic ID"
+      parameters:
+        - in: "body"
+          name: "body"
+          required: true
+          schema:
+            $ref: "#/definitions/TicketMechanicInput"
+      responses:
+        200:
+          description: "Mechanic removed successfully"
+          schema:
+            $ref: "#/definitions/TicketMechanicResponse"
+
+  /service_tickets/{ticket_id}/parts:
+    post:
+      tags:
+        - service tickets
+      summary: "Assign a part to a service ticket"
+      description: "Links an existing part description to a ticket by creating a part record."
+      parameters:
+        - in: "path"
+          name: "ticket_id"
+          type: "integer"
+          required: true
+          description: "ID of the service ticket"
+        - in: "body"
+          name: "body"
+          required: true
+          schema:
+            $ref: "#/definitions/PartInput"
+      responses:
+        201:
+          description: "Part successfully assigned to service ticket"
+          schema:
+            $ref: "#/definitions/PartResponse"
+
+#  PART DESCRIPTIONS
+
+  /part_descriptions:
+    post:
+      tags:
+        - parts
+      summary: "Create a new part description"
+      description: "Adds a new part description to the system."
+      parameters:
+        - in: "body"
+          name: "body"
+          required: true
+          schema:
+            $ref: "#/definitions/PartDescriptionInput"
+      responses:
+        201:
+          description: "Part description created successfully"
+          schema:
+            $ref: "#/definitions/PartDescriptionResponse"
+
+    get:
+      tags:
+        - parts
+      summary: "Retrieve all part descriptions"
+      description: "Returns a list of all part descriptions."
+      responses:
+        200:
+          description: "Successfully retrieved part descriptions"
+          schema:
+            $ref: "#/definitions/AllPartDescriptions"
+
+  /part_descriptions/{description_id}:
+    put:
+      tags:
+        - parts
+      summary: "Update a part description"
+      description: "Updates an existing part description."
+      parameters:
+        - in: "path"
+          name: "description_id"
+          required: true
+          type: "integer"
+        - in: "body"
+          name: "body"
+          required: true
+          schema:
+            $ref: "#/definitions/PartDescriptionInput"
+      responses:
+        200:
+          description: "Part description updated successfully"
+          schema:
+            $ref: "#/definitions/PartDescriptionResponse"
+
+    delete:
+      tags:
+        - parts
+      summary: "Delete a part description"
+      description: "Deletes a part description from the system."
+      parameters:
+        - in: "path"
+          name: "description_id"
+          required: true
+          type: "integer"
+      responses:
+        200:
+          description: "Part description deleted successfully"
+          schema:
+            $ref: "#/definitions/DeletePartResponse"
+
+# PARTS
+
+  /parts:
+    post:
+      tags:
+        - parts
+      summary: "Create a new part"
+      description: "Adds a new part to the inventory, must reference a part description."
+      parameters:
+        - in: "body"
+          name: "body"
+          required: true
+          schema:
+            $ref: "#/definitions/PartInput"
+      responses:
+        201:
+          description: "Part created successfully"
+          schema:
+            $ref: "#/definitions/PartResponse"
+
+    get:
+      tags:
+        - parts
+      summary: "Retrieve all parts"
+      description: "Returns a list of all parts in inventory."
+      responses:
+        200:
+          description: "Successfully retrieved parts"
+          schema:
+            $ref: "#/definitions/AllParts"
 
 definitions: 
 
@@ -450,4 +613,77 @@ definitions:
           customer_id:
             type: "string"
 
-           
+  TicketMechanicInput:
+    type: "object"
+    properties:
+      ticket_id:
+        type: "integer"
+      mechanic_id:
+        type: "integer"
+    required:
+      - ticket_id
+      - mechanic_id
+
+  TicketMechanicResponse:
+    type: "object"
+    properties:
+      message:
+        type: "string"
+      ticket_id:
+        type: "integer"
+      mechanic_id:
+        type: "integer"
+
+  PartDescriptionInput:
+    type: "object"
+    properties:
+      description:
+        type: "string"
+    required:
+      - description
+
+  PartDescriptionResponse:
+    type: "object"
+    properties:
+      id:
+        type: "integer"
+      description:
+        type: "string"
+
+  AllPartDescriptions:
+    type: array
+    items:
+      $ref: "#/definitions/PartDescriptionResponse"
+
+  PartInput:
+    type: "object"
+    properties:
+      part_description_id:
+        type: "integer"
+      ticket_id:
+        type: "integer"
+    required:
+      - part_description_id
+      - ticket_id
+
+  PartResponse:
+    type: "object"
+    properties:
+      id:
+        type: "integer"
+      part_description_id:
+        type: "integer"
+      ticket_id:
+        type: "integer"
+    
+  AllParts:
+  type: array
+  items:
+    $ref: "#/definitions/PartResponse"
+
+  DeletePartResponse:
+    type: object
+    properties:
+      message:
+        type: string
+  
