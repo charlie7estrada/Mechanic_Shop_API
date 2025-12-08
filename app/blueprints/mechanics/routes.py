@@ -54,6 +54,15 @@ def read_mechanics():
     mechanics = db.session.query(Mechanic).all()
     return mechanics_schema.jsonify(mechanics), 200
 
+@mechanics_bp.route('/<int:mechanic_id>', methods=['GET'])
+def read_mechanic(mechanic_id):
+    mechanic = db.session.get(Mechanic, mechanic_id)
+    
+    if not mechanic:
+        return jsonify({"message": "mechanic not found"}), 404
+    
+    return mechanic_schema.jsonify(mechanic), 200
+
 @mechanics_bp.route('<int:mechanic_id>', methods=['PUT'])
 @token_required
 def update_mechanic(mechanic_id=None, user_id=None):
