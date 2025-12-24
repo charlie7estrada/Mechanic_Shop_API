@@ -2,8 +2,6 @@
 
 A RESTful API for managing automotive repair shop operations — customers, mechanics, vehicles, and service tickets.
 
-**🔗 [Live API](https://mechanic-shop-api-yq4k.onrender.com/)**
-
 ![ERD Diagram](Mechanic_Erd.png)
 
 ## Features
